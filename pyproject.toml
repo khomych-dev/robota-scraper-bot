@@ -1,0 +1,45 @@
+[project]
+name = "robota-scraper-bot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+# ==============================================================================
+# RUFF CONFIGURATION (Linter and Formatter)
+# ==============================================================================
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = [".venv", "venv", ".git", "__pycache__"]
+
+[tool.ruff.lint]
+# Selecting rule sets:
+# E (style errors), F (logical errors), I (import sorting),
+# UP (syntax updates for modern Python), B (bugs from flake8-bugbear)
+select = ["E", "F", "I", "UP", "B"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ==============================================================================
+# MYPY CONFIGURATION (Static Type Checker)
+# ==============================================================================
+[tool.mypy]
+python_version = "3.12"
+strict = true
+disallow_untyped_defs = true
+disallow_any_unimported = false
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[dependency-groups]
+dev = [
+    "mypy>=2.1.0",
+    "pre-commit>=4.6.0",
+    "ruff>=0.15.18",
+]

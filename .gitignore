@@ -1,0 +1,14 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python and tool cache
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.ruff_cache/
+
+# Secrets files (to be added in the future)
+.env

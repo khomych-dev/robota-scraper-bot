@@ -3,40 +3,44 @@ from app.parser.models import Vacancy
 
 
 def test_extract_vacancies() -> None:
-    """Checks the correctness of data extraction from HTML."""
-    # 1. Prepare fake HTML that imitates the site structure
-    fake_html = """
-    <html>
-        <body>
-            <div class="vacancy-card">
-                <h2> Python Developer </h2>
-                <p class="company-name"> Tech Core </p>
-                <a href="https://robota.ua/test-job">Детальніше</a>
-            </div>
-            <div class="vacancy-card">
-                <h2> Data Scientist </h2>
-                <p class="company-name"> AI Solutions </p>
-                <a href="https://robota.ua/ds-job">Детальніше</a>
-            </div>
-            <div class="some-other-div">
-                <h2> Не вакансія </h2>
-            </div>
-        </body>
-    </html>
-    """
+    """Checks the correctness of data extraction from JSON."""
+    # 1. Prepare fake JSON that imitates the server response
+    fake_json = {
+        "data": {
+            "publishedVacancies": {
+                "items": [
+                    {
+                        "id": "111",
+                        "title": "Python Developer",
+                        "company": {"id": "222", "name": "Tech Core"},
+                    },
+                    {
+                        "id": "333",
+                        "title": "Data Scientist",
+                        "company": {"id": "444", "name": "AI Solutions"},
+                    },
+                ]
+            }
+        }
+    }
 
     # 2. Call our function
-    vacancies = extract_vacancies(fake_html)
+    vacancies = extract_vacancies(fake_json)
 
     # 3. Check results
-    # The third div is ignored because it doesn't have the required class
     assert len(vacancies) == 2
 
     assert isinstance(vacancies[0], Vacancy)
     assert vacancies[0].title == "Python Developer"
     assert vacancies[0].company == "Tech Core"
-    assert vacancies[0].link == "https://robota.ua/test-job"
+    assert vacancies[0].link == "https://robota.ua/company222/vacancy111"
 
     assert vacancies[1].title == "Data Scientist"
     assert vacancies[1].company == "AI Solutions"
-    assert vacancies[1].link == "https://robota.ua/ds-job"
+    assert vacancies[1].link == "https://robota.ua/company444/vacancy333"
+
+
+def test_extract_vacancies_empty() -> None:
+    """Checks how the function handles empty or invalid JSON."""
+    assert extract_vacancies({}) == []
+    assert extract_vacancies({"data": None}) == []

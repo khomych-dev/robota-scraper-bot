@@ -1,34 +1,35 @@
-from bs4 import BeautifulSoup
+from typing import Any
 
 from app.parser.models import Vacancy
 
 
-def extract_vacancies(html: str) -> list[Vacancy]:
-    """
-    Parses HTML page and extracts a list of vacancies.
-    """
-    # Initialize BeautifulSoup using the fast lxml parser
-    soup = BeautifulSoup(html, "lxml")
-    vacancies: list[Vacancy] = []
+def extract_vacancies(data: dict[str, Any]) -> list[Vacancy]:
+    """Extracts a list of vacancies from the GraphQL API JSON response."""
+    vacancies = []
 
-    # NOTE: This is a basic example (skeleton).
-    # On the actual robota.ua website, the classes will be different,
-    # we will update them later when we start testing the real site.
-    cards = soup.find_all("div", class_="vacancy-card")
+    # 1. Defend against incorrect structure:
+    # Go deep into the JSON to the "items" list
+    try:
+        items = data["data"]["publishedVacancies"]["items"]
+    except (KeyError, TypeError):
+        return []
 
-    for card in cards:
-        title_elem = card.find("h2")
-        company_elem = card.find("p", class_="company-name")
-        link_elem = card.find("a")
+    # 2. Iterate through each vacancy in the list
+    for item in items:
+        # Get the title
+        title = item.get("title", "Без назви")
 
-        # If all required elements are found, create a Vacancy object
-        if title_elem and company_elem and link_elem:
-            vacancies.append(
-                Vacancy(
-                    title=title_elem.text.strip(),
-                    company=company_elem.text.strip(),
-                    link=str(link_elem.get("href", "")),
-                )
-            )
+        # We retrieve information about the company (this is an embedded dictionary)
+        company_data = item.get("company") or {}
+        company_name = company_data.get("name", "Невідома компанія")
+        company_id = company_data.get("id", "0")
+
+        vacancy_id = item.get("id", "")
+
+        # 3. Form a correct link (this is how they are built on robota.ua)
+        link = f"https://robota.ua/company{company_id}/vacancy{vacancy_id}"
+
+        # Create an object and add it to the list
+        vacancies.append(Vacancy(title=title, company=company_name, link=link))
 
     return vacancies

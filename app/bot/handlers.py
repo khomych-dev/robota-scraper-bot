@@ -12,39 +12,32 @@ async def cmd_start(message: Message) -> None:
     """Command Handler /start."""
     await message.answer(
         "Привіт! 👋\n"
-        "Я бот для пошуку вакансій.\n"
-        "Натисни /search, щоб перевірити інтеграцію з парсером!"
+        "Я бот для пошуку вакансій на robota.ua.\n"
+        "Натисни /search, щоб знайти свіжі вакансії для Python!"
     )
 
 
 @router.message(Command("search"))
 async def cmd_search(message: Message, scraper: RobotaScraper) -> None:
-    """Command Handler /search."""
-    await message.answer("🔍 Розумний пошук запущено. Йду на сайт...")
-
-    # Placeholder URL for testing
-    test_url = "https://robota.ua/"
+    """Command Handler /search. Searches for real vacancies."""
+    await message.answer("🔍 Шукаю свіжі вакансії по слову <b>Python</b>...")
 
     try:
-        # Access our Facade!
-        vacancies = await scraper.scrape_vacancies(test_url)
+        # Now we simply pass the word for the search!
+        vacancies = await scraper.scrape_vacancies("python")
 
         if not vacancies:
-            await message.answer(
-                "✅ Запит пройшов успішно, HTML отримано!\n"
-                "Але парсер повернув 0 вакансій.\n"
-                "<i>(Це нормально, бо ми ще не налаштували реальні HTML-класи в extractor.py)</i>"
-            )
+            await message.answer("🤷‍♂️ На жаль, вакансій не знайдено.")
             return
 
-        # If we happen to find anything (we'll format the first 5)
-        response = "<b>🔥 Знайдені вакансії:</b>\n\n"
-        for vac in vacancies[:5]:
+        # Let's create a nice message for the first 5 job openings
+        response = f"<b>🔥 Знайдено вакансій: {len(vacancies)}. Ось вони:</b>\n\n"
+        for vac in vacancies:
             response += f"🔹 <b>{vac.title}</b>\n"
             response += f"🏢 Компанія: {vac.company}\n"
-            response += f"🔗 <a href='{vac.link}'>Відкрити</a>\n\n"
+            response += f"🔗 <a href='{vac.link}'>Відкрити вакансію</a>\n\n"
 
-        # disable_web_page_preview=True removes the huge preview images from links
+        # We're sending the completed list via Telegram
         await message.answer(response, disable_web_page_preview=True)
 
     except Exception as e:

@@ -4,29 +4,38 @@ from curl_cffi.requests import AsyncSession
 
 
 class HTTPClient:
-    """Asynchronous HTTP client that bypasses Cloudflare (impersonate)."""
+    """Async HTTP client for working with robota.ua API."""
 
     def __init__(self) -> None:
-        # Use Any to prevent mypy from fussing about the complex C-library
         self.session: Any | None = None
 
     async def start(self) -> None:
-        """Initializes the session, masking it as Google Chrome version 120."""
         if self.session is None:
             self.session = AsyncSession(impersonate="chrome120")
 
     async def stop(self) -> None:
-        """Closes the session."""
         if self.session is not None:
             await self.session.close()
             self.session = None
 
     async def get_html(self, url: str) -> str:
-        """Executes a GET request and returns the HTML of the page."""
         if self.session is None:
-            raise RuntimeError("HTTPClient session is not initialized. Call start() first.")
-
+            raise RuntimeError("HTTPClient session is not initialized.")
         response = await self.session.get(url)
         response.raise_for_status()
-
         return str(response.text)
+
+    async def post_json(self, url: str, json_data: dict[str, Any]) -> dict[str, Any]:
+        """Makes a POST request with JSON data and returns a JSON response."""
+        if self.session is None:
+            raise RuntimeError("HTTPClient session is not initialized.")
+
+        response = await self.session.post(url, json=json_data)
+
+        if response.status_code != 200:
+            error_msg = response.text
+            raise RuntimeError(
+                f"HTTP {response.status_code}. Деталі від сервера: {error_msg[:800]}"
+            )
+
+        return dict(response.json())

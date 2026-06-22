@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock, Mock, patch
 
-import aiohttp
+from curl_cffi.requests import AsyncSession
 
 from app.parser.client import HTTPClient
 
@@ -11,30 +11,27 @@ async def test_http_client_start_stop() -> None:
     assert client.session is None
 
     await client.start()
-    assert isinstance(client.session, aiohttp.ClientSession)
+    assert isinstance(client.session, AsyncSession)
 
     await client.stop()
     assert client.session is None
 
 
-@patch("aiohttp.ClientSession.get")
+@patch("curl_cffi.requests.AsyncSession.get")
 async def test_http_client_get_html_success(mock_get: AsyncMock) -> None:
     """Checks if the client correctly returns HTML without a real request."""
-    # 1. Setting up our fake (mock) response object
-    mock_response = AsyncMock()
+    # 1. Creating a regular Mock for the response (since response is not a coroutine)
+    mock_response = Mock()
     mock_response.raise_for_status = Mock()
-    mock_response.text.return_value = "<html>Test robota.ua</html>"
+    # In curl_cffi, text is a property, not a method
+    mock_response.text = "<html>Test robota.ua</html>"
 
-    # This magic string is needed for the mock to work with 'async with'
-    mock_response.__aenter__.return_value = mock_response
-
-    # Telling the system: "When get() is called, return our mock_response"
+    # When await session.get() is called, return our mock_response
     mock_get.return_value = mock_response
 
     # 2. Executing our real code
     client = HTTPClient()
     await client.start()
-
     html = await client.get_html("https://robota.ua/test")
 
     # 3. Checking results

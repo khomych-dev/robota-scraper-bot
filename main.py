@@ -3,32 +3,42 @@ import logging
 import sys
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 
 from app.bot.handlers import router
 from app.core.config import get_bot_token
+from app.parser.scraper import RobotaScraper
 
 
 async def main() -> None:
-    # 1. Set up logging (so you can see what the bot is doing in the terminal)
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-
-    # 2. Get the bot token from our .env file
     token = get_bot_token()
 
-    # 3. Initialize the bot and dispatcher
-    bot = Bot(token=token)
+    # Turn on ParseMode.HTML for support of <b>, <i>, <a> tags in messages
+    bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
-
-    # 4. Let's register our router with handlers
     dp.include_router(router)
 
-    # 5. Start Polling (the bot begins listening on Telegram)
+    # 1. Initialize our scraper
+    scraper = RobotaScraper()
+    await scraper.start()
+
     logging.info("Запуск бота...")
-    await dp.start_polling(bot)
+    try:
+        # 2. Pass the scraper to the dispatcher (as kwargs)
+        await dp.start_polling(bot, scraper=scraper)
+    finally:
+        # 3. Guaranteed to close the aiohttp session when the bot stops
+        await scraper.stop()
+        logging.info("Скрейпер зупинено.")
 
 
 if __name__ == "__main__":
-    # Let's run the asynchronous main() function
+    # Adding settings for Windows so that curl_cffi works perfectly
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

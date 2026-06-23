@@ -20,3 +20,11 @@ def get_bot_token() -> str:
     if not token:
         raise ValueError("BOT_TOKEN is missing in .env file! Please add it.")
     return token
+
+
+def get_admin_id() -> int:
+    """Gets the admin ID from the environment variables."""
+    admin_id = os.getenv("ADMIN_ID")
+    if not admin_id:
+        raise ValueError("ADMIN_ID is not set in .env file")
+    return int(admin_id)

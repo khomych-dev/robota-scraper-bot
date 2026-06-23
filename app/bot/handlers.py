@@ -6,21 +6,18 @@ from app.database import Database
 from app.parser.scraper import RobotaScraper
 
 router = Router()
-db = Database()
 
 
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
     """Command Handler /start."""
     await message.answer(
-        "Привіт! 👋\n"
-        "Я бот для пошуку вакансій на robota.ua.\n"
-        "Натисни /search, щоб знайти свіжі вакансії для Python!"
+        "Привіт! 👋\nЯ бот для пошуку вакансій на robota.ua.\nНатисни /search, щоб знайти свіжі вакансії для Python!"
     )
 
 
 @router.message(Command("search"))
-async def cmd_search(message: Message, scraper: RobotaScraper) -> None:
+async def cmd_search(message: Message, scraper: RobotaScraper, db: Database) -> None:
     """Command Handler /search. Searches for vacancies and filters out already seen ones."""
     await message.answer("🔍 Searching for fresh vacancies by the word <b>Python</b>...")
 
@@ -36,9 +33,7 @@ async def cmd_search(message: Message, scraper: RobotaScraper) -> None:
 
         # 3. If there are no new ones - say so
         if not new_vacancies:
-            await message.answer(
-                "🤷‍♂️ Нових цільових вакансій поки немає. Всі знайдені я вже надсилав раніше!"
-            )
+            await message.answer("🤷‍♂️ Нових цільових вакансій поки немає. Всі знайдені я вже надсилав раніше!")
             return
 
         # 4. We only create posts for NEW job openings

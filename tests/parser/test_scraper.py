@@ -5,7 +5,7 @@ from app.parser.scraper import RobotaScraper
 
 @patch("app.parser.client.HTTPClient.post_json")
 async def test_scraper_pipeline(mock_post_json: AsyncMock) -> None:
-    """Tests the scraper's operation using the GraphQL API."""
+    """Tests the scraper's operation using the GraphQL API and the Smart Filter."""
 
     # 1. Setting up a fake response from the API
     mock_post_json.return_value = {
@@ -14,7 +14,8 @@ async def test_scraper_pipeline(mock_post_json: AsyncMock) -> None:
                 "items": [
                     {
                         "id": "999",
-                        "title": "Backend Python",
+                        "title": "Junior Backend Python",  # Додали магічне слово Junior!
+                        "description": "Шукаємо кандидата без досвіду на навчання.",  # Додали опис
                         "company": {"id": "888", "name": "Google"},
                     }
                 ]
@@ -31,7 +32,7 @@ async def test_scraper_pipeline(mock_post_json: AsyncMock) -> None:
 
     # 4. Checking the results
     assert len(vacancies) == 1
-    assert vacancies[0].title == "Backend Python"
+    assert vacancies[0].title == "Junior Backend Python"
     assert vacancies[0].company == "Google"
     assert vacancies[0].link == "https://robota.ua/company888/vacancy999"
 

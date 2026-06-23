@@ -24,7 +24,7 @@ class RobotaScraper:
         return {
             "operationName": "getPublishedVacanciesList",
             "variables": {
-                "pagination": {"count": 20, "page": 0},
+                "pagination": {"count": 100, "page": 0},
                 "filter": {
                     "keywords": keyword,
                     "militaryVacancyDisplayMode": "APPENDED",
@@ -50,28 +50,56 @@ class RobotaScraper:
                     "showOnlyWithoutExperience": False,
                     "showWithoutSalary": True,
                 },
-                "sort": "BY_BUSINESS_SCORE",
+                "sort": "BY_DATE",
             },
             "query": "query getPublishedVacanciesList($filter: PublishedVacanciesFilterInput!,"
             " $pagination: PublishedVacanciesPaginationInput!,"
             " $sort: PublishedVacanciesSortType!) {\n  publishedVacancies(filter: $filter,"
             " pagination: $pagination, sort: $sort) {\n    totalCount\n    items {\n"
             "      ...PublishedVacanciesItem\n      __typename\n    }\n    __typename\n  }"
-            "\n}\n\nfragment PublishedVacanciesItem on Vacancy {\n  id\n  title\n  company {\n"
-            "    id\n    name\n    __typename\n  }\n  __typename\n}\n",
+            "\n}\n\nfragment PublishedVacanciesItem on Vacancy {\n  id\n  title\n  description\n"
+            "  company {\n    id\n    name\n    __typename\n  }\n  __typename\n}\n",
         }
+
+    def _filter_vacancies(self, vacancies: list[Vacancy]) -> list[Vacancy]:
+        """Filters job listings, keeping only those that are suitable for beginners."""
+        # Our list of suggested words (feel free to add your own!)
+        good_words = [
+            "навчання",
+            "можна без досвіду",
+            "безкоштовне навчання",
+            "без досвіду",
+            "junior",
+            "trainee",
+            "студент",
+            "intern",
+            "стажист",
+            "початківець",
+            "без досвіду роботи",
+        ]
+
+        filtered = []
+        for vac in vacancies:
+            # Combine title and description into one lowercase string
+            full_text = (vac.title + " " + vac.description).lower()
+
+            # Check if at least one desired word is present in the text
+            if any(word in full_text for word in good_words):
+                filtered.append(vac)
+
+        return filtered
 
     async def scrape_vacancies(self, keyword: str) -> list[Vacancy]:
         """
-        Sends a request to the API and returns a list of vacancies by keyword.
+        Sends a request to the API, receives vacancies, and filters them.
         """
-        # 1. Form the correct JSON for the query
         payload = self._build_payload(keyword)
-
-        # 2. Send a POST request to the database
         json_response = await self.client.post_json(self.api_url, payload)
 
-        # 3. Pass the response to the extractor
-        vacancies = extract_vacancies(json_response)
+        # Get ALL vacancies (for example, 20 pieces)
+        all_vacancies = extract_vacancies(json_response)
 
-        return vacancies
+        # We run it through our Smart Filter
+        good_vacancies = self._filter_vacancies(all_vacancies)
+
+        return good_vacancies
